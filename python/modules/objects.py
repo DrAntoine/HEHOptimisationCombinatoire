@@ -1,3 +1,4 @@
+import random
 
 class Experience():
     nombreCouvertures = 1
@@ -9,6 +10,8 @@ class Experience():
     population = []
     mutation_chromosome_factor = 0.1
     mutation_gene_factor = 0.1
+    mutation_chromosome_number = 2
+    mutation_copy_number = 50
 
     def __init__(self, nbCouv, nbSlot, sheetCost, plateCost, printPerCov):
         self.nombreCouvertures = nbCouv
@@ -45,13 +48,37 @@ class Experience():
             return -1
     
     def selection(self):
+        scores = []
+        for individu in self.population:
+            score = self.estimateCost(individu)
+            if score > 0 :
+                scores.append((score, individu))
+        if len(scores) <2:
+            raise ValueError("Trop peu d'individu dans la population pour une nouvelle génération")
+            #TODO terminer la selection
         pass
 
     def mixage(self, individu_1, individu_2):
-        pass
+        full_chromo = []#individu_1.chromosomes + individu_2.chromosomes
+        new_nb_chromo = len(full_chromo)/2
+        if random.random() < self.mutation_chromosome_factor:
+            new_nb_chromo += random.randint(-self.mutation_chromosome_number, self.mutation_chromosome_number)
+        new_chromo = []
+        for _ in range(new_nb_chromo):
+            chromo = random.choice(full_chromo)
+            full_chromo.remove(chromo)
+            chromo = self.mutate(chromo)
+            new_chromo.append(chromo)
 
-    def mutate(self):
-        pass
+
+    def mutate(self, chromosome):
+        chromosome_muted = Chromosome
+        if random.random() < self.mutation_gene_factor:
+            chromosome_muted.numberCopy = random.randint(-self.mutation_copy_number, self.mutation_copy_number)
+        for i in range(len(chromosome_muted.agencementSlot)):
+            if random.random() < self.mutation_gene_factor:
+                chromosome_muted.agencementSlot[i] = random.randint(0, self.nombreCouvertures)
+        return chromosome_muted
 
 
 class Individu():
