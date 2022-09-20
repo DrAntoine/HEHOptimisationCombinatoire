@@ -1,48 +1,77 @@
+import logging
 import random
+import math
 
 class Experience():
-    nombreCouvertures = 1
-    nombreSlots=1
-    sheetCost=1
-    plateCost=1
-    nbImpressionCouvertures = []
-    nb_individu = 100
+    NOMBRE_COUVERTURES = 1
+    NOMBRE_SLOTS=1
+    SHEET_COST=1
+    PLATE_COST=1
+    COVER_IMPRESSION_NUMBER = []
+    #====================
+    POPULATION_SIZE = 100
+    CHROMOSOMAL_MUTATION_FACTOR = 0.1
+    GENE_MUTATION_FACTOR = 0.1
+    CHROMOSOME_NUMBER_MUTATIONS = 2
+    COPY_NUMBER_MUTATIONS = 50
+    MAXIMAL_NUMBER_OF_CHROMOSOMES = 50
+    MINIMAL_NUMBER_OF_CHROMOSOMES = 1
+    MINIMAL_NUMBER_OF_PLATE_COPY = 100
+    MAXIMAL_NUMBER_OF_PLATE_COPY = 1000
+    bestScore = 0
+    meanScore = 0
+    worstScore = 0
     population = []
-    mutation_chromosome_factor = 0.1
-    mutation_gene_factor = 0.1
-    mutation_chromosome_number = 2
-    mutation_copy_number = 50
+    # reproductionChance=[]
 
     def __init__(self, nbCouv, nbSlot, sheetCost, plateCost, printPerCov):
-        self.nombreCouvertures = nbCouv
-        self.nombreSlots = nbSlot
-        self.sheetCost = sheetCost
-        self.plateCost = plateCost
-        self.nbImpressionCouvertures = printPerCov
+        self.NOMBRE_COUVERTURES = nbCouv
+        self.NOMBRE_SLOTS = nbSlot
+        self.SHEET_COST = sheetCost
+        self.PLATE_COST = plateCost
+        self.COVER_IMPRESSION_NUMBER = printPerCov
+        self.MINIMAL_NUMBER_OF_CHROMOSOMES = max(math.ceil(self.NOMBRE_COUVERTURES/self.NOMBRE_SLOTS), 1)
+        self.MAXIMAL_NUMBER_OF_PLATE_COPY = max(self.COVER_IMPRESSION_NUMBER)
+        self.settings()
 
-    def coherence(self, individu):
-        nbImpression = [0 for _ in range(self.nombreCouvertures)]
+    def settings(self, populationSize = 100, chromosomalMutationFactor=0.1, geneMutationFactor=0.1, chromosomeNumberMutations=2, 
+        copyNumberMutation=50, maximalNumberOfChromosomes=50, minimalNumberOfPlateCopy=100):
+        self.POPULATION_SIZE = populationSize
+        self.CHROMOSOMAL_MUTATION_FACTOR = chromosomalMutationFactor
+        self.GENE_MUTATION_FACTOR = geneMutationFactor
+        self.CHROMOSOME_NUMBER_MUTATIONS = chromosomeNumberMutations
+        self.COPY_NUMBER_MUTATIONS = copyNumberMutation
+        self.MAXIMAL_NUMBER_OF_CHROMOSOMES= maximalNumberOfChromosomes
+        self.MINIMAL_NUMBER_OF_PLATE_COPY = minimalNumberOfPlateCopy
+
+
+
+    def __coherence__(self, individu):
+        """
+        La fonction __coherence__ s'assure que l'individu passé en parametre propose une solution viable pour l'algo
+        """
+        nbImpression = [0 for _ in range(self.NOMBRE_COUVERTURES)]
         if len(individu.chromosomes) <= 0:
             return False
         for chromosome in individu.chromosomes:
             lenght = len(chromosome.agencementSlot)
-            if lenght <0 or lenght>self.nombreSlots:
+            if lenght <0 or lenght>self.NOMBRE_SLOTS:
                 return False
             for cover in chromosome.agencementSlot:
-                if cover < 0 or cover >= self.nombreCouvertures:
+                if cover < 0 or cover >= self.NOMBRE_COUVERTURES:
                     return False
                 nbImpression[cover]+= chromosome.numberCopy
-        for i in range(self.nombreCouvertures):
-            if self.nbImpressionCouvertures[i]>nbImpression[i]:
+        for i in range(self.NOMBRE_COUVERTURES):
+            if self.COVER_IMPRESSION_NUMBER[i]>nbImpression[i]:
                 return False
         # Le return true n'arrive que si l'ensemble des conditions ont été respectée
         return True
 
-    def estimateCost(self, individu):
-        if(self.coherence(individu)):
-            cost = len(individu.chromosomes)*self.plateCost
+    def __estimateCost__(self, individu):
+        if(self.__coherence__(individu)):
+            cost = len(individu.chromosomes)*self.PLATE_COST
             for chromosome in individu.chromosomes:
-                cost += chromosome.numberCopy * self.sheetCost
+                cost += chromosome.numberCopy * self.SHEET_COST
             return cost
         else:
             return -1
@@ -50,35 +79,99 @@ class Experience():
     def selection(self):
         scores = []
         for individu in self.population:
-            score = self.estimateCost(individu)
+            score = self.__estimateCost__(individu)
             if score > 0 :
                 scores.append((score, individu))
-        if len(scores) <2:
-            raise ValueError("Trop peu d'individu dans la population pour une nouvelle génération")
-            #TODO terminer la selection
-        pass
+        try:
+            if len(scores) <2:
+                raise ValueError("Trop peu d'individu dans la population pour une nouvelle génération")
+        except ValueError as E:
+            print(E)
+            exit()
+        else:
+            scores.sort()
+            if len(scores)>self.POPULATION_SIZE//2:
+                scores = scores[:self.POPULATION_SIZE//2]
+            self.bestScore=scores[0][0]
+            self.worstScore=scores[-1][0]
+            meanScore = 0
+            for score in scores:
+                meanScore+=score[0]
+            self.meanScore = meanScore/len(scores)
+            self.population=[score[1] for score in scores]
+            # scoresCentreReduit = [(score[0]-self.bestScore)/(self.worstScore-self.bestScore) for score in scores]
+            # self.reproductionChance=[math.ceil((1-scr)*10) for scr in scoresCentreReduit]
 
-    def mixage(self, individu_1, individu_2):
-        full_chromo = []#individu_1.chromosomes + individu_2.chromosomes
-        new_nb_chromo = len(full_chromo)/2
-        if random.random() < self.mutation_chromosome_factor:
-            new_nb_chromo += random.randint(-self.mutation_chromosome_number, self.mutation_chromosome_number)
+    def actualBestScore(self):
+        return self.bestScore
+    
+    def actualMeanScore(self):
+        return self.meanScore
+    
+    def actualWorstScore(self):
+        return self.worstScore
+
+    def reproduction(self):
+        lotery = [i for i in range(len(self.population))]
+        random.shuffle(lotery)
+        new_generation = []
+        while len(new_generation)<self.POPULATION_SIZE:
+            sample1 = random.choice(lotery)
+            sample2= random.choice(lotery)
+            while(sample1==sample2):
+                sample2 = random.choice(lotery)
+            print(f"\r{len(new_generation)} - {sample1} {sample2}")
+            child = self.__accouplement__(self.population[sample1], self.population[sample2])
+            if self.__estimateCost__(child)>0:
+                new_generation.append(child)
+                
+        self.population=new_generation
+
+    def __accouplement__(self, individu_1, individu_2):
+        full_chromo = list(individu_1.chromosomes) + list(individu_2.chromosomes)
+        new_nb_chromo = math.ceil(len(full_chromo)/2)
+        if random.random() < self.CHROMOSOMAL_MUTATION_FACTOR:
+            new_nb_chromo += random.randint(-self.CHROMOSOME_NUMBER_MUTATIONS, self.CHROMOSOME_NUMBER_MUTATIONS)
+        if new_nb_chromo > len(full_chromo):
+            new_nb_chromo = len(full_chromo)
+        if new_nb_chromo < 1:
+            new_nb_chromo = 1
         new_chromo = []
         for _ in range(new_nb_chromo):
             chromo = random.choice(full_chromo)
-            full_chromo.remove(chromo)
-            chromo = self.mutate(chromo)
+            # full_chromo.remove(chromo)
+            chromo = self.__mutate__(chromo)
             new_chromo.append(chromo)
+        return Individu(new_chromo)
 
 
-    def mutate(self, chromosome):
-        chromosome_muted = Chromosome
-        if random.random() < self.mutation_gene_factor:
-            chromosome_muted.numberCopy = random.randint(-self.mutation_copy_number, self.mutation_copy_number)
+    def __mutate__(self, chromosome):
+        chromosome_muted = chromosome
+        if random.random() < self.GENE_MUTATION_FACTOR:
+            chromosome_muted.numberCopy = random.randint(-self.COPY_NUMBER_MUTATIONS, self.COPY_NUMBER_MUTATIONS)
         for i in range(len(chromosome_muted.agencementSlot)):
-            if random.random() < self.mutation_gene_factor:
-                chromosome_muted.agencementSlot[i] = random.randint(0, self.nombreCouvertures)
+            if random.random() < self.GENE_MUTATION_FACTOR:
+                chromosome_muted.agencementSlot[i] = random.randint(0, self.NOMBRE_COUVERTURES)
         return chromosome_muted
+
+
+    def initiate_population(self):
+        while len(self.population) < self.POPULATION_SIZE:
+            individu = self.__create_individu__()
+            if(self.__estimateCost__(individu)!=-1):
+                self.population.append(individu)
+                logging.debug(f"\rPopulation = {len(self.population)}")
+    
+    def __create_individu__(self):
+        mini = self.MINIMAL_NUMBER_OF_CHROMOSOMES
+        maxi = self.MAXIMAL_NUMBER_OF_CHROMOSOMES
+        chromosomes = [self.__create_chromosome__() for _ in range(random.randint(mini, maxi))]
+        return Individu(chromosomes)
+    
+    def __create_chromosome__(self):
+        copyNumber = random.randint(self.MINIMAL_NUMBER_OF_PLATE_COPY, self.MAXIMAL_NUMBER_OF_PLATE_COPY)
+        agencement = [random.randint(0, self.NOMBRE_COUVERTURES) for _ in range(self.NOMBRE_SLOTS)]
+        return Chromosome(copyNumber, agencement)
 
 
 class Individu():
@@ -86,6 +179,9 @@ class Individu():
 
     def __init__(self, chromosomesList):
         self.chromosomes = chromosomesList
+    
+    def __repr__(self) -> str:
+        return f"{self.chromosomes}"
 
 
 class Chromosome():
@@ -95,3 +191,6 @@ class Chromosome():
     def __init__(self, nbCopy, agencement):
         self.numberCopy = nbCopy
         self.agencementSlot = agencement
+    
+    def __repr__(self) -> str:
+        return f"({self.numberCopy},{self.agencementSlot})"
