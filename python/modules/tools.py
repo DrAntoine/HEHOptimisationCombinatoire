@@ -25,3 +25,12 @@ def load(filename):
     except ValueError as e:
         print(e)
         exit()
+
+def writeLogs(best, mean, worst):
+    with open(f"logs_score.txt", "a") as file:
+        file.writelines(f"{int(best)}\t{int(mean)}\t{int(worst)}\n")
+
+def cleanLogs():
+    with open("logs_score.txt", "w") as f:
+        # f.write("0\t0\t0\n")
+        f.write("")

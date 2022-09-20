@@ -79,9 +79,9 @@ class Experience():
     def selection(self):
         scores = []
         for individu in self.population:
-            score = self.__estimateCost__(individu)
-            if score > 0 :
-                scores.append((score, individu))
+            individu.setScore(self.__estimateCost__(individu))
+            if individu.score > 0 :
+                scores.append(individu)
         try:
             if len(scores) <2:
                 raise ValueError("Trop peu d'individu dans la population pour une nouvelle génération")
@@ -92,15 +92,14 @@ class Experience():
             scores.sort()
             if len(scores)>self.POPULATION_SIZE//2:
                 scores = scores[:self.POPULATION_SIZE//2]
-            self.bestScore=scores[0][0]
-            self.worstScore=scores[-1][0]
+            self.bestScore=round(scores[0].score,2)
+            self.worstScore= round(scores[-1].score,2)
             meanScore = 0
             for score in scores:
-                meanScore+=score[0]
-            self.meanScore = meanScore/len(scores)
-            self.population=[score[1] for score in scores]
-            # scoresCentreReduit = [(score[0]-self.bestScore)/(self.worstScore-self.bestScore) for score in scores]
-            # self.reproductionChance=[math.ceil((1-scr)*10) for scr in scoresCentreReduit]
+                meanScore+=score.score
+            self.meanScore = round(meanScore/len(scores))
+            self.population=[score for score in scores]
+
 
     def actualBestScore(self):
         return self.bestScore
@@ -112,19 +111,31 @@ class Experience():
         return self.worstScore
 
     def reproduction(self):
-        lotery = [i for i in range(len(self.population))]
-        random.shuffle(lotery)
-        new_generation = []
+        new_generation = [] #self.population
+        sample1 = 0
+        sample2 = 0
+        populationLenght = len(self.population)
+        countRound = 0
+        autofill = False
         while len(new_generation)<self.POPULATION_SIZE:
-            sample1 = random.choice(lotery)
-            sample2= random.choice(lotery)
-            while(sample1==sample2):
-                sample2 = random.choice(lotery)
-            print(f"\r{len(new_generation)} - {sample1} {sample2}")
-            child = self.__accouplement__(self.population[sample1], self.population[sample2])
+            if countRound < 5 and not autofill: 
+                if sample2 == sample1:
+                    sample2 +=1
+                if sample2 > populationLenght-1:
+                    sample2 = 0
+                    sample1 +=1
+                if sample1 > populationLenght-1:
+                    sample1 = 0
+                    sample2 = 1
+                    countRound +=1
+                # print(f"\r{len(new_generation)} - {sample1} {sample2}")
+                child = self.__accouplement__(self.population[sample1], self.population[sample2])
+            else:
+                # print("Creation individu")
+                child = self.__create_individu__()
             if self.__estimateCost__(child)>0:
                 new_generation.append(child)
-                
+            sample2+=1
         self.population=new_generation
 
     def __accouplement__(self, individu_1, individu_2):
@@ -176,12 +187,28 @@ class Experience():
 
 class Individu():
     chromosomes = []
+    score = 0
 
     def __init__(self, chromosomesList):
         self.chromosomes = chromosomesList
     
     def __repr__(self) -> str:
         return f"{self.chromosomes}"
+    
+    def setScore(self, score):
+        self.score = score
+    
+    def __gt__(self, other):
+        if(self.score > other.score):
+            return True
+        else:
+            return False
+    
+    def __lt__(self, other):
+        if(self.score < other.score):
+            return True
+        else:
+            return False
 
 
 class Chromosome():
