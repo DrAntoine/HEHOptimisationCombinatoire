@@ -12,7 +12,7 @@ Attention, ce script requière les librairies plotly et dash !
 """
 
 
-filePath = "../../../logs_score.txt"
+filePath = "../logs_score.txt"
 X = []
 best = []
 mean = []
@@ -74,13 +74,21 @@ def update_graph_scatter(n):
         name="Pire score de la génération",
         mode = "lines"
     )
+    onlybest = False
 
-    all_data = best+mean+worst
-    return {"data": [data_best, data_mean,data_worst], 
-            "layout" : go.Layout(xaxis=dict(
-                range=[min(X), max(X)]),
-                yaxis=dict(range=[min(all_data), max(all_data)]),
-                )}
+    if not onlybest:
+        all_data = best+mean+worst
+        return {"data": [data_best, data_mean,data_worst], 
+                "layout" : go.Layout(xaxis=dict(
+                    range=[min(X), max(X)]),
+                    yaxis=dict(range=[min(all_data), max(all_data)]),
+                    )}
+    else:    
+        return {"data": [data_best], 
+                "layout" : go.Layout(xaxis=dict(
+                    range=[min(X), max(X)]),
+                    yaxis=dict(range=[min(best), max(best)]),
+                    )}
 
 if __name__ == "__main__":
     last_update = 0

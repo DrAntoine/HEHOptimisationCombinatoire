@@ -22,6 +22,7 @@ class Experience():
     meanScore = 0
     worstScore = 0
     population = []
+    bestPopulation = []
     # reproductionChance=[]
 
     def __init__(self, nbCouv, nbSlot, sheetCost, plateCost, printPerCov):
@@ -52,53 +53,60 @@ class Experience():
         """
         nbImpression = [0 for _ in range(self.NOMBRE_COUVERTURES)]
         if len(individu.chromosomes) <= 0:
-            return False
+            return -1
         for chromosome in individu.chromosomes:
             lenght = len(chromosome.agencementSlot)
-            if lenght <0 or lenght>self.NOMBRE_SLOTS:
-                return False
+            if lenght == 0 or lenght>self.NOMBRE_SLOTS:
+                return -1
             for cover in chromosome.agencementSlot:
                 if cover < 0 or cover >= self.NOMBRE_COUVERTURES:
-                    return False
+                    return -1
                 nbImpression[cover]+= chromosome.numberCopy
+        penalisation = 1
         for i in range(self.NOMBRE_COUVERTURES):
             if self.COVER_IMPRESSION_NUMBER[i]>nbImpression[i]:
-                return False
+                penalisation *= 10
         # Le return true n'arrive que si l'ensemble des conditions ont été respectée
-        return True
+        return penalisation
 
     def __estimateCost__(self, individu):
-        if(self.__coherence__(individu)):
+        penalisation_factor = self.__coherence__(individu)
+        if penalisation_factor != -1:
             cost = len(individu.chromosomes)*self.PLATE_COST
             for chromosome in individu.chromosomes:
                 cost += chromosome.numberCopy * self.SHEET_COST
-            return cost
+            return cost*penalisation_factor
         else:
             return -1
-    
+        
     def selection(self):
-        scores = []
+        selectedPopulation = []
         for individu in self.population:
             individu.setScore(self.__estimateCost__(individu))
             if individu.score > 0 :
-                scores.append(individu)
+                selectedPopulation.append(individu)
         try:
-            if len(scores) <2:
+            if len(selectedPopulation) <2:
                 raise ValueError("Trop peu d'individu dans la population pour une nouvelle génération")
         except ValueError as E:
             print(E)
             exit()
         else:
-            scores.sort()
-            if len(scores)>self.POPULATION_SIZE//2:
-                scores = scores[:self.POPULATION_SIZE//2]
-            self.bestScore=round(scores[0].score,2)
-            self.worstScore= round(scores[-1].score,2)
+            selectedPopulation.sort()
+            self.bestPopulation += selectedPopulation
+            self.bestPopulation.sort()
+            self.bestPopulation = self.bestPopulation[:self.POPULATION_SIZE]
+            # if len(selectedPopulation)>self.POPULATION_SIZE//2:
+            #     selectedPopulation = selectedPopulation[:self.POPULATION_SIZE//2]
+            self.bestScore= round(selectedPopulation[0].score,2)
+            self.worstScore= round(selectedPopulation[-1].score,2)
             meanScore = 0
-            for score in scores:
-                meanScore+=score.score
-            self.meanScore = round(meanScore/len(scores))
-            self.population=[score for score in scores]
+            delta = self.worstScore - self.bestScore
+            for sample in selectedPopulation:
+                meanScore+=sample.score
+                sample.reproductionRate = round((1-((sample.score - self.bestScore)/delta))*50)
+            self.meanScore = round(meanScore/len(selectedPopulation))
+            self.population=list(selectedPopulation)
 
 
     def actualBestScore(self):
@@ -111,31 +119,24 @@ class Experience():
         return self.worstScore
 
     def reproduction(self):
-        new_generation = [] #self.population
+        new_generation = self.bestPopulation[:self.POPULATION_SIZE//10]
+        lotery = []
+        for p in self.population:
+            id = self.population.index(p)
+            lotery.extend(id for _ in range(p.reproductionRate))
+        random.shuffle(lotery)
         sample1 = 0
         sample2 = 0
-        populationLenght = len(self.population)
-        countRound = 0
-        autofill = False
         while len(new_generation)<self.POPULATION_SIZE:
-            if countRound < 5 and not autofill: 
-                if sample2 == sample1:
-                    sample2 +=1
-                if sample2 > populationLenght-1:
-                    sample2 = 0
-                    sample1 +=1
-                if sample1 > populationLenght-1:
-                    sample1 = 0
-                    sample2 = 1
-                    countRound +=1
-                # print(f"\r{len(new_generation)} - {sample1} {sample2}")
-                child = self.__accouplement__(self.population[sample1], self.population[sample2])
-            else:
-                # print("Creation individu")
-                child = self.__create_individu__()
+            sample1 = random.choice(lotery)
+            sample2 = random.choice(lotery)
+            while sample2 == sample1:
+                sample2 = random.choice(lotery)
+            child = self.__accouplement__(self.population[sample1], self.population[sample2])
             if self.__estimateCost__(child)>0:
                 new_generation.append(child)
-            sample2+=1
+                lotery.remove(sample1)
+                lotery.remove(sample2)
         self.population=new_generation
 
     def __accouplement__(self, individu_1, individu_2):
@@ -143,14 +144,19 @@ class Experience():
         new_nb_chromo = math.ceil(len(full_chromo)/2)
         if random.random() < self.CHROMOSOMAL_MUTATION_FACTOR:
             new_nb_chromo += random.randint(-self.CHROMOSOME_NUMBER_MUTATIONS, self.CHROMOSOME_NUMBER_MUTATIONS)
-        if new_nb_chromo > len(full_chromo):
-            new_nb_chromo = len(full_chromo)
-        if new_nb_chromo < 1:
-            new_nb_chromo = 1
+        new_nb_chromo = min(new_nb_chromo, len(full_chromo))
+        new_nb_chromo = max(new_nb_chromo,1)
         new_chromo = []
         for _ in range(new_nb_chromo):
-            chromo = random.choice(full_chromo)
-            # full_chromo.remove(chromo)
+            chromo1 = random.choice(full_chromo)
+            chromo2 = random.choice(full_chromo)
+            chromos = [chromo1, chromo2]
+            agencement = []
+            for i in range(len(chromo1.agencementSlot)):
+                c = random.choice(chromos)
+                agencement.append(c.agencementSlot[i])
+            nbCopy = random.choice(chromos).numberCopy
+            chromo = Chromosome(nbCopy, agencement)
             chromo = self.__mutate__(chromo)
             new_chromo.append(chromo)
         return Individu(new_chromo)
@@ -184,16 +190,22 @@ class Experience():
         agencement = [random.randint(0, self.NOMBRE_COUVERTURES) for _ in range(self.NOMBRE_SLOTS)]
         return Chromosome(copyNumber, agencement)
 
+    def get_best_sample(self):
+        pop = list(self.population)
+        pop.sort()
+        return pop[0]
+
 
 class Individu():
     chromosomes = []
     score = 0
+    reproductionRate = 0
 
     def __init__(self, chromosomesList):
         self.chromosomes = chromosomesList
     
     def __repr__(self) -> str:
-        return f"{self.chromosomes}"
+        return f"{self.score}-{self.chromosomes}"
     
     def setScore(self, score):
         self.score = score
