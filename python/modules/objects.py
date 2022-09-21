@@ -107,7 +107,10 @@ class Experience():
             delta = self.worstScore - self.bestScore
             for sample in selectedPopulation:
                 meanScore+=sample.score
-                sample.reproductionRate = round(((1-((sample.score - self.bestScore)/delta))+1)*25)
+                if delta!=0:
+                    sample.reproductionRate = round(((1-((sample.score - self.bestScore)/delta))+1)*25)
+                else:
+                    sample.reproductionRate = 1
             self.meanScore = round(meanScore/len(selectedPopulation))
             self.population=list(selectedPopulation)
 
@@ -133,10 +136,11 @@ class Experience():
         while len(new_generation)<self.POPULATION_SIZE:
             sample1 = random.choice(lotery)
             sample2 = random.choice(lotery)
-            while sample2 == sample1:
-                sample2 = random.choice(lotery)
+            # while sample2 == sample1:
+            #     sample2 = random.choice(lotery)
             child = self.__accouplement__(self.population[sample1], self.population[sample2])
-            if self.__estimateCost__(child)>0:
+            child_score = self.__estimateCost__(child)
+            if child_score>0 and child_score < self.bestScore*1.5:
                 new_generation.append(child)
                 lotery.remove(sample1)
                 lotery.remove(sample2)

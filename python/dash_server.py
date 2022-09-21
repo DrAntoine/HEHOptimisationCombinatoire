@@ -74,7 +74,7 @@ def update_graph_scatter(n):
         name="Pire score de la génération",
         mode = "lines"
     )
-    onlybest = False
+    onlybest = True
 
     if not onlybest:
         all_data = best+mean+worst
