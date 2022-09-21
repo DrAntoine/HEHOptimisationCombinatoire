@@ -1,6 +1,7 @@
 
 import logging
 from modules import tools
+import alive_progress as alive_bar
 # from modules import objects as obj
 
 logging.basicConfig(level=logging.DEBUG)
@@ -8,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 nombreGeneration=500
 filePath = "Dataset-Dev/I001.in"
+
 experience = tools.load(filename=filePath)
 tools.cleanLogs()
 
@@ -20,6 +22,7 @@ cout feuille : {experience.SHEET_COST}""")
 
 
 experience.settings(geneMutationFactor=0.45, chromosomalMutationFactor=0.1, populationSize=100)
+
 experience.initiate_population()
 
 for i in range(nombreGeneration):
