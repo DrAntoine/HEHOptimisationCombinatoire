@@ -1,14 +1,13 @@
 
 import logging
 from modules import tools
-import alive_progress as alive_bar
 # from modules import objects as obj
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-nombreGeneration=1500
-filePath = "Dataset-Dev/I002.in"
+nombreGeneration=100
+filePath = "Dataset-Dev/I001.in"
 experience = tools.load(filename=filePath)
 tools.cleanLogs()
 
@@ -20,7 +19,7 @@ cout plaque : {experience.PLATE_COST}
 cout feuille : {experience.SHEET_COST}""")
 
 
-experience.settings(geneMutationFactor=0.5, chromosomalMutationFactor=0.6, populationSize=1000)
+experience.settings(geneMutationFactor=0.1, chromosomalMutationFactor=0.1, populationSize=1000)
 experience.initiate_population()
 
 for i in range(nombreGeneration):

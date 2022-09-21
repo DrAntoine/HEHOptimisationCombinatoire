@@ -47,7 +47,7 @@ class Experience():
 
 
 
-    def __coherence__(self, individu):
+    def __coherence__(self, individu, hard=False):
         """
         La fonction __coherence__ s'assure que l'individu passé en parametre propose une solution viable pour l'algo
         """
@@ -65,11 +65,14 @@ class Experience():
         penalisation = 1
         for i in range(self.NOMBRE_COUVERTURES):
             if self.COVER_IMPRESSION_NUMBER[i]>nbImpression[i]:
-                penalisation *= 10
+                if hard:
+                    return -1
+                else:
+                    penalisation *= 50
         # Le return true n'arrive que si l'ensemble des conditions ont été respectée
         return penalisation
 
-    def __estimateCost__(self, individu):
+    def __estimateCost__(self, individu, hard=False):
         penalisation_factor = self.__coherence__(individu)
         if penalisation_factor != -1:
             cost = len(individu.chromosomes)*self.PLATE_COST
@@ -104,7 +107,7 @@ class Experience():
             delta = self.worstScore - self.bestScore
             for sample in selectedPopulation:
                 meanScore+=sample.score
-                sample.reproductionRate = round((1-((sample.score - self.bestScore)/delta))*50)
+                sample.reproductionRate = round(((1-((sample.score - self.bestScore)/delta))+1)*25)
             self.meanScore = round(meanScore/len(selectedPopulation))
             self.population=list(selectedPopulation)
 
@@ -119,7 +122,7 @@ class Experience():
         return self.worstScore
 
     def reproduction(self):
-        new_generation = self.bestPopulation[:self.POPULATION_SIZE//10]
+        new_generation = self.bestPopulation[:self.POPULATION_SIZE//100]
         lotery = []
         for p in self.population:
             id = self.population.index(p)
@@ -175,7 +178,7 @@ class Experience():
     def initiate_population(self):
         while len(self.population) < self.POPULATION_SIZE:
             individu = self.__create_individu__()
-            if(self.__estimateCost__(individu)!=-1):
+            if(self.__estimateCost__(individu, hard=True)!=-1):
                 self.population.append(individu)
                 logging.debug(f"\rPopulation = {len(self.population)}")
     
