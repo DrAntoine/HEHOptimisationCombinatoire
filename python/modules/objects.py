@@ -55,7 +55,7 @@ class Experience():
         if len(individu.chromosomes) <= 0:
             return -1
         for chromosome in individu.chromosomes:
-            if chromosome.numberCopy <= 0:
+            if chromosome.numberCopy <1:
                 return -1
             lenght = len(chromosome.agencementSlot)
             if lenght == 0 or lenght>self.NOMBRE_SLOTS:
@@ -138,8 +138,8 @@ class Experience():
         while len(new_generation)<self.POPULATION_SIZE:
             sample1 = random.choice(lotery)
             sample2 = random.choice(lotery)
-            # while sample2 == sample1:
-            #     sample2 = random.choice(lotery)
+            while sample2 == sample1:
+                sample2 = random.choice(lotery)
             child = self.__accouplement__(self.population[sample1], self.population[sample2])
             child_score = self.__estimateCost__(child)
             if child_score>0 and child_score < self.bestScore*1.5:

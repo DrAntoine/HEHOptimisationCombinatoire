@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 nombreGeneration=500
-filePath = "Dataset-Dev/I003.in"
+filePath = "Dataset-Dev/I001.in"
 experience = tools.load(filename=filePath)
 tools.cleanLogs()
 
