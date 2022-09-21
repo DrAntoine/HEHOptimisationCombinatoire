@@ -55,6 +55,8 @@ class Experience():
         if len(individu.chromosomes) <= 0:
             return -1
         for chromosome in individu.chromosomes:
+            if chromosome.numberCopy <= 0:
+                return -1
             lenght = len(chromosome.agencementSlot)
             if lenght == 0 or lenght>self.NOMBRE_SLOTS:
                 return -1
