@@ -1,14 +1,15 @@
 
 import logging
-from modules import tools
-import alive_progress as alive_bar
-# from modules import objects as obj
+from my_modules import tools
+# import alive_progress as alive_bar
+import random
 
-logging.basicConfig(level=logging.DEBUG)
+random.seed(42)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-nombreGeneration=500
-filePath = "Dataset-Dev/I001.in"
+nombreGeneration=1500
+filePath = "Dataset-Dev/I002.in"
 
 experience = tools.load(filename=filePath)
 tools.cleanLogs()
@@ -21,17 +22,20 @@ cout plaque : {experience.PLATE_COST}
 cout feuille : {experience.SHEET_COST}""")
 
 
-experience.settings(geneMutationFactor=0.45, chromosomalMutationFactor=0.1, populationSize=100)
+experience.settings(geneMutationFactor=0.45, populationSize=500)
 
 experience.initiate_population()
-
+# for p in experience.population:
+#     print(p)
 for i in range(nombreGeneration):
-    experience.selection()
-    logging.debug(f"{i} - score : Best Mean Worst - {experience.actualBestScore()} {experience.actualMeanScore()} {experience.actualWorstScore()} {len(experience.population)}")
-    print(experience.get_best_sample())
-    tools.writeLogs(best=experience.actualBestScore(), mean=experience.actualMeanScore(), worst=experience.actualWorstScore())
-    experience.reproduction()
+    scoredPopulation = experience.selection()
+    logging.debug(f"{i} - score : Ultimate Best Mean Worst - {experience.ultimateScore} {experience.bestScore} {experience.medianScore} {experience.worstScore} {len(experience.population)}")
+    print(scoredPopulation[0])
+    tools.writeLogs(best=experience.bestScore, mean=experience.medianScore, worst=experience.worstScore, ultimate=experience.ultimateScore)
+    experience.reproduction(scoredPopulation)
+
 
 experience.selection()
-logging.debug(f"score : Best Mean Worst - {experience.actualBestScore()} {experience.actualMeanScore()} {experience.actualWorstScore()} {len(experience.population)}")
-print(experience.get_best_sample())
+logging.debug(f"{i} - score : Ultimate Best Mean Worst - {experience.ultimateScore} {experience.bestScore} {experience.medianScore} {experience.worstScore} {len(experience.population)}")
+print(f"{experience.decodeIndividu(experience.bestPopulation[0][1])}{experience.bestPopulation[0][0]}€")
+print()

@@ -1,5 +1,5 @@
 import os
-import modules.objects as obj
+import my_modules.objects as obj
 
 def load(filename):
     try:
@@ -26,9 +26,9 @@ def load(filename):
         print(e)
         exit()
 
-def writeLogs(best, mean, worst):
+def writeLogs(best, mean, worst, ultimate):
     with open(f"logs_score.txt", "a") as file:
-        file.writelines(f"{int(best)}\t{int(mean)}\t{int(worst)}\n")
+        file.writelines(f"{int(ultimate)}\t{int(best)}\t{int(mean)}\t{int(worst)}\n")
 
 def cleanLogs():
     with open("logs_score.txt", "w") as f:
