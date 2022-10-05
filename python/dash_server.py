@@ -51,25 +51,32 @@ def update_graph_scatter(n):
             count +=1
             X.append(count)
             values = line.split("\t")
-            values[2] = values[2][:-1]
+            # values[2] = values[2][:-1]
             ultimate.append(int(values[0]))
             best.append(int(values[1]))
             mean.append(int(values[2]))
             worst.append(int(values[3]))
 
-    # datas_ultimate = []
-    # lastmin=max(worst)
-    # for i in ultimate:
-    #     if i < lastmin:
-    #         datas_ultimate.append(i)
-    #         lastmin = i
-    #     else:
-    #         datas_ultimate.append(lastmin)
+    datas_ultimate_from_begin = []
+    lastmin=max(worst)
+    for i in ultimate:
+        if i < lastmin:
+            datas_ultimate_from_begin.append(i)
+            lastmin = i
+        else:
+            datas_ultimate_from_begin.append(lastmin)
     
     data_ultimate = plotly.graph_objs.Scatter(
     x = list(X),
     y = ultimate,
-    name="Meilleur score jusqu'à cet instant",
+    name="Meilleur score jusqu'à cet instant pour la configuration",
+    mode = "lines"
+    )
+
+    data_ultimate_begin = plotly.graph_objs.Scatter(
+    x = list(X),
+    y = datas_ultimate_from_begin,
+    name="Meilleur score jusqu'à cet instant depuis le début",
     mode = "lines"
     )
 
@@ -93,21 +100,37 @@ def update_graph_scatter(n):
         name="Pire score de la génération",
         mode = "lines"
     )
-    onlybest = True
 
-    if not onlybest:
-        all_data = best+mean+worst
-        return {"data": [data_best, data_mean,data_worst], 
-                "layout" : go.Layout(xaxis=dict(
-                    range=[min(X), max(X)]),
-                    yaxis=dict(range=[min(min(all_data), 0), max(all_data)]),
-                    )}
-    else:    
-        return {"data": [data_best,data_ultimate], 
-                "layout" : go.Layout(xaxis=dict(
-                    range=[min(X), max(X)]),
-                    yaxis=dict(range=[min(min(ultimate), 0), max(best)]),
-                    )}
+    worstData = False
+    medianData = True
+    currentBest = True
+    configurationBest = True
+    sessionBest = True
+    
+    all_data = []
+    datas = []
+    
+    if worstData:
+        datas.append(data_worst)
+        all_data += worst
+    if medianData:
+        datas.append(data_mean)
+        all_data += mean
+    if currentBest:
+        datas.append(data_best)
+        all_data += best
+    if configurationBest:
+        datas.append(data_ultimate)
+        all_data += ultimate
+    if sessionBest:
+        datas.append(data_ultimate_begin)
+        all_data += datas_ultimate_from_begin
+        
+    return {"data": datas, 
+            "layout" : go.Layout(xaxis=dict(
+            range=[min(X), max(X)]),
+            yaxis=dict(range=[min(all_data)*0.9, max(all_data)*1.1]),
+            )}
 
 if __name__ == "__main__":
     last_update = 0

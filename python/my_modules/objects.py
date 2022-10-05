@@ -2,6 +2,7 @@
 import logging
 import random
 import math
+import pulp as p
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -16,11 +17,12 @@ class Experience():
     POPULATION_SIZE = 100
     #CHROMOSOMAL_MUTATION_FACTOR = 0.1 #insertion/deletion
     GENE_MUTATION_FACTOR = 0.1
-    MAGNITUDE_OF_GENE_MUTATION = 10
-    GENE_MAXIMAL_VALUE = 100
+    MAGNITUDE_OF_GENE_MUTATION = 12
+    GENE_MAXIMAL_VALUE = 1000
     GENE_MINIMAL_VALUE = 1
     MAXIMAL_GENOTYPE_LENGHT = 50
     MINIMAL_GENOTYPE_LENGHT = 1
+    GENOTYPE_LENGHT = 0
     bestScore = 0
     medianScore = 0
     worstScore = 0
@@ -38,15 +40,17 @@ class Experience():
         self.COVER_IMPRESSION_NUMBER = printPerCov
         self.MAXIMAL_GENOTYPE_LENGHT = (self.NOMBRE_SLOTS+1)*self.NOMBRE_COUVERTURES
         self.MINIMAL_GENOTYPE_LENGHT = math.ceil(self.NOMBRE_COUVERTURES/self.NOMBRE_SLOTS)*(self.NOMBRE_SLOTS+1)
+        # print(f"Minimal genotype size : {self.MINIMAL_GENOTYPE_LENGHT}\nMaximal genotype lenght : {self.MAXIMAL_GENOTYPE_LENGHT}")
+        #input()
         self.settings()
 
-    def settings(self, populationSize = 100, magnitudeOfGeneMutation=10, geneMutationFactor=0.1, geneMaximalValue = 100, geneMinimalValue=1):
+    def settings(self, populationSize = 100, magnitudeOfGeneMutation=10, geneMutationFactor=0.1, geneMaximalValue = 100, geneMinimalValue=1, genLen = 5):
         self.POPULATION_SIZE = populationSize
         self.MAGNITUDE_OF_GENE_MUTATION = magnitudeOfGeneMutation
         self.GENE_MUTATION_FACTOR = geneMutationFactor
         self.GENE_MAXIMAL_VALUE = geneMaximalValue
         self.GENE_MINIMAL_VALUE = geneMinimalValue
-        
+        self.GENOTYPE_LENGHT = genLen * (self.NOMBRE_SLOTS +1)
         # TODO remove next line
         #self.MAXIMAL_GENOTYPE_LENGHT = self.MINIMAL_GENOTYPE_LENGHT
 
@@ -101,19 +105,23 @@ class Experience():
             # return plateCompositionDecoded
 
     def __estimateCost__(self, individu, printCost=False):
-        plateRatio, plateComposition = self.decodeIndividu(individu)
-        maxRequiredPrint = 0
-        for i in range(len(self.COVER_IMPRESSION_NUMBER)):
-            coverproportion = 0
-            for p in range(len(plateRatio)):
-                numberOfCov = 0
-                for s in plateComposition[p*self.NOMBRE_SLOTS:(p+1)*self.NOMBRE_SLOTS]:
-                    if s == i+1:
-                        numberOfCov+=1
-                coverproportion += plateRatio[p]*numberOfCov
-            maxRequiredPrint = max(maxRequiredPrint, math.ceil(self.COVER_IMPRESSION_NUMBER[i]/coverproportion))
-            if printCost : print(f"Nombre total de copie requise :{maxRequiredPrint}")
-        cost = len(plateRatio)*self.PLATE_COST+maxRequiredPrint*self.SHEET_COST
+        printPerPlate, plateComposition = self.decodeIndividu(individu)
+        # maxRequiredPrint = 0
+        # for i in range(len(self.COVER_IMPRESSION_NUMBER)):
+        #     coverproportion = 0
+        #     for p in range(len(plateRatio)):
+        #         numberOfCov = 0
+        #         for s in plateComposition[p*self.NOMBRE_SLOTS:(p+1)*self.NOMBRE_SLOTS]:
+        #             if s == i+1:
+        #                 numberOfCov+=1
+        #         coverproportion += plateRatio[p]*numberOfCov
+        #     if coverproportion != 0:
+        #         maxRequiredPrint = max(maxRequiredPrint, math.ceil(self.COVER_IMPRESSION_NUMBER[i]/coverproportion))
+
+            # if printCost : print(f"Nombre total de copie requise :{maxRequiredPrint}")
+        cost = len(printPerPlate)*self.PLATE_COST
+        for i in printPerPlate:
+            cost += i*self.SHEET_COST
         if printCost:
             print(f"{cost}€")
         # input()
@@ -143,15 +151,38 @@ class Experience():
                 plateRatio.append(individu[i])
             else:
                 plateComposition.append(individu[i])
-        sumPlateRatio = sum(plateRatio)
-        plateRatio = [i/sumPlateRatio for i in plateRatio]
+        #plateImpressionNumber = self.compute_nb_impression(plateRatio, plateComposition)
+        # return plateImpressionNumber, plateComposition
+        #sumPlateRatio = sum(plateRatio)
+        #minRatio = min(plateRatio)
+        # plateRatio = [round(i/minRatio,2) for i in plateRatio]
+        #plateRatio = [round(i/sumPlateRatio,2) for i in plateRatio]
         return plateRatio, plateComposition
+    
+    def compute_nb_impression(self,plateRatioNumber, plateComposition):
+        minRatioNumber = min(plateRatioNumber)
+        #ratio = [i/minRatioNumber for i in plateRatioNumber]
+        ratio = [math.ceil(i/minRatioNumber) for i in plateRatioNumber]
+        nbCovTotal = [0 for i in range(self.NOMBRE_COUVERTURES)]
+        for i in range(len(ratio)):
+            for slot in plateComposition[i*self.NOMBRE_SLOTS:(i+1)*self.NOMBRE_SLOTS]:
+                nbCovTotal[slot-1]+=1*ratio[i]
+        nbPrintPerSlot = [0 for i in range(self.NOMBRE_COUVERTURES)]
+        for i in range(len(nbPrintPerSlot)):
+            nbPrintPerSlot[i] = math.ceil(self.COVER_IMPRESSION_NUMBER[i]/nbCovTotal[i])
+        nbPrintPerPlate = [0 for i in range(len(plateComposition)//(self.NOMBRE_SLOTS))]
+        for i in range(len(nbPrintPerPlate)):
+            for j in plateComposition[i*self.NOMBRE_SLOTS: (i+1)*self.NOMBRE_SLOTS]:
+                nbPrintPerPlate[i] = max(nbPrintPerPlate[i], nbPrintPerSlot[j-1])
+        # print(nbPrintPerPlate)
+        # input()
+        return nbPrintPerPlate
 
     def decodeIndividu(self, individu):
-        # TODO verifier la longueur des chromosomes pour tronquer les incomplets
         plateRatio, plateComposition = self.extractData(individu)
         plateCompositionDecodedAndFixed = self.__coherence__(plateComposition)
-        return plateRatio, plateCompositionDecodedAndFixed
+        printPerPlate = self.compute_nb_impression(plateRatio, plateCompositionDecodedAndFixed)
+        return printPerPlate, plateCompositionDecodedAndFixed
 
     def selection(self):
         ScoredPopulation = [(self.__estimateCost__(individu), individu) for individu in self.population]
@@ -159,15 +190,22 @@ class Experience():
         self.bestPopulation += ScoredPopulation
         self.bestPopulation.sort()
         self.bestPopulation = self.bestPopulation[:self.POPULATION_SIZE]
+        self.logs(ScoredPopulation)
+        return ScoredPopulation
+
+    def logs(self, ScoredPopulation):
         self.bestScore= round(ScoredPopulation[0][0],2)
         self.worstScore= round(ScoredPopulation[-1][0],2)
-        self.medianScore = round(ScoredPopulation[len(ScoredPopulation)//2][0])
+        med = ScoredPopulation[len(ScoredPopulation)//2][0]
+        self.medianScore = round(med)
         self.ultimateScore = self.bestPopulation[0][0]
-        return ScoredPopulation
 
 
     def reproduction(self, scoredPopulation):
         new_generation = [] #self.bestPopulation[:self.POPULATION_SIZE//10]
+        # for i in range(self.POPULATION_SIZE//10):
+        #     scoredPopulation.append(self.bestPopulation[i])
+        scoredPopulation = self.bestPopulation
         lotery = []
         delta = self.worstScore - self.bestScore
         for id_p in range(len(scoredPopulation)):
@@ -177,6 +215,9 @@ class Experience():
         random.shuffle(lotery)
         sample1 = 0
         sample2 = 0
+        for i in range(self.POPULATION_SIZE//10):
+            # new_generation.append(self.__create_individu__(random.randint(1, self.NOMBRE_COUVERTURES)*(self.NOMBRE_SLOTS+1)))
+            new_generation.append(self.__create_individu__(self.GENOTYPE_LENGHT))
         while len(new_generation)<self.POPULATION_SIZE:
             sample1 = random.choice(lotery)
             sample2 = random.choice(lotery)
@@ -191,8 +232,9 @@ class Experience():
         self.population=new_generation
 
     def __accouplement__(self, individu_1, individu_2):
-        full_chromo = len(individu_1) + len(individu_2)
-        new_nb_genes = math.ceil(full_chromo/2)
+        min_lenght = min(len(individu_1), len(individu_2))
+        maxi_lenght = max(len(individu_1), len(individu_2))
+        new_nb_genes = random.choice([min_lenght, maxi_lenght])
         # if random.random() < self.CHROMOSOMAL_MUTATION_FACTOR:
         #     new_nb_chromo += random.randint(-self.CHROMOSOME_NUMBER_MUTATIONS, self.CHROMOSOME_NUMBER_MUTATIONS)
         # new_nb_chromo = min(new_nb_chromo, len(full_chromo))
@@ -221,19 +263,45 @@ class Experience():
         #     chromosome_muted.numberCopy = random.randint(-self.COPY_NUMBER_MUTATIONS, self.COPY_NUMBER_MUTATIONS)
         for i in range(len(chromosome_muted)):
             if random.random() < self.GENE_MUTATION_FACTOR:
-                chromosome_muted[i] = random.randint(self.GENE_MINIMAL_VALUE, self.GENE_MAXIMAL_VALUE)
+                # chromosome_muted[i] = random.randint(self.GENE_MINIMAL_VALUE, self.GENE_MAXIMAL_VALUE)
+                mutation = chromosome_muted[i]+random.randint(-self.MAGNITUDE_OF_GENE_MUTATION,self.MAGNITUDE_OF_GENE_MUTATION)
+                if mutation > self.GENE_MAXIMAL_VALUE:
+                    chromosome_muted[i] = self.GENE_MAXIMAL_VALUE
+                elif mutation < self.GENE_MINIMAL_VALUE:
+                    chromosome_muted[i] = self.GENE_MINIMAL_VALUE
+                else:
+                    chromosome_muted[i]=mutation
         return chromosome_muted
 
 
     def initiate_population(self):
+        # genotypeSizes = []
+        # for a in range(self.NOMBRE_COUVERTURES):
+        #     print(f"nb couv : {a}")
+        #     genotypeSizes.append((a+1)*(self.NOMBRE_SLOTS +1))
+        # self.GENOTYPE_LENGHT = nbPlate*(self.NOMBRE_SLOTS +1)
         while len(self.population) < self.POPULATION_SIZE:
-            individu = self.__create_individu__()
+            # indexGenotypeSize = min(len(self.population)//(self.POPULATION_SIZE// self.NOMBRE_COUVERTURES), len(genotypeSizes)-1)
+            # print(indexGenotypeSize)
+            # if nbPlate == 0:
+            #     genotypeSize = random.randint(1, self.NOMBRE_COUVERTURES)*(self.NOMBRE_SLOTS +1)
+            # else :
+            #     genotypeSize = nbPlate*(self.NOMBRE_SLOTS +1)
+            # genotypeSize = genotypeSizes[indexGenotypeSize]
+            individu = self.__create_individu__(size=self.GENOTYPE_LENGHT)
+            # print(individu)
             # print(self.__estimateCost__(individu))
             self.population.append(individu)
             # logging.debug(f"\rPopulation = {len(self.population)}")
     
-    def __create_individu__(self):
-        return [random.randint(self.GENE_MINIMAL_VALUE, self.GENE_MAXIMAL_VALUE) for _ in range(random.randint(self.MINIMAL_GENOTYPE_LENGHT, self.MAXIMAL_GENOTYPE_LENGHT))]
+    def __create_individu__(self, size=0):
+        # genotypeSize = 0
+        # if size != 0:
+        #     genotypeSize = size
+        # else:
+        #     genotypeSize = random.randint(self.MINIMAL_GENOTYPE_LENGHT, self.MAXIMAL_GENOTYPE_LENGHT)
+        genotype = [random.randint(self.GENE_MINIMAL_VALUE, self.GENE_MAXIMAL_VALUE) for _ in range(self.GENOTYPE_LENGHT)]
+        return genotype
 
     def get_best_sample(self):
         score = list(self.scores)
