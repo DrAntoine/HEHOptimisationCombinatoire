@@ -1,15 +1,15 @@
 
 import logging
 from my_modules import tools
-# import alive_progress as alive_bar
+import math
 import random
 
-random.seed(42)
+# random.seed(42)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 nombreGeneration=1500
-filePath = "Dataset-Dev/I002.in"
+filePath = "Dataset-Dev/I009.in"
 
 experience = tools.load(filename=filePath)
 tools.cleanLogs()
@@ -20,10 +20,13 @@ nb slot : {experience.NOMBRE_SLOTS}
 cout plaque : {experience.PLATE_COST} 
 cout feuille : {experience.SHEET_COST}""")
 
+MAXIMAL_PLATES_NUMBER = experience.NOMBRE_COUVERTURES
+MINIMAL_PLATES_NUMBER = math.ceil(experience.NOMBRE_COUVERTURES/experience.NOMBRE_SLOTS)
+
 Solution = []
 bestpop = []
-for nbPlate in range(experience.NOMBRE_COUVERTURES):
-    experience.settings(geneMutationFactor=0.6, populationSize=250, genLen=nbPlate+1, geneMinimalValue=1, geneMaximalValue=50)
+for nbPlate in range(MINIMAL_PLATES_NUMBER,MAXIMAL_PLATES_NUMBER+1):
+    experience.settings(geneMutationFactor=0.8, populationSize=150, genLen=nbPlate+1, geneMinimalValue=1, geneMaximalValue=15000)
     experience.population = []
     # bestpop.append([experience.bestPopulation])
     experience.bestPopulation = []
@@ -46,19 +49,16 @@ for nbPlate in range(experience.NOMBRE_COUVERTURES):
                 countBestScore = 0
                 bestScore = newBest
         logging.debug(f"{genX} - score : Ultimate Best Mean Worst - {experience.ultimateScore} {experience.bestScore} {experience.medianScore} {experience.worstScore} {len(experience.population)}")
-        print(scoredPopulation[0])
+        #print(scoredPopulation[0])
         tools.writeLogs(best=experience.bestScore, mean=experience.medianScore, worst=experience.worstScore, ultimate=experience.ultimateScore)
-        if countBestScore > 50 or experience.medianScore == experience.bestScore:
+        print(f"\rNb plaque: {nbPlate} \tGeneration {genX} \tAvancement {(round((countBestScore/16)*100,0)):=6}%", end="")
+        if countBestScore > 15 or experience.medianScore == experience.bestScore:
             Solution.append(scoredPopulation[0])
             converged = True
+            print()
         if not converged:
             experience.reproduction(scoredPopulation)
             genX += 1 
+print()
+tools.showResult(experience, Solution)
 
-
-# experience.selection()
-# logging.debug(f"{i} - score : Ultimate Best Mean Worst - {experience.ultimateScore} {experience.bestScore} {experience.medianScore} {experience.worstScore} {len(experience.population)}")
-print("="*50)
-for s in Solution:
-    print(f"{experience.decodeIndividu(s[1])}{s[0]}€")
-    # print(s)
