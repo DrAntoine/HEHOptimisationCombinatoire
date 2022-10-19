@@ -3,7 +3,8 @@ import logging
 from my_modules import tools
 import math
 import random
-
+print (__name__)
+exit()
 # random.seed(42)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ for nbPlate in range(MINIMAL_PLATES_NUMBER,MAXIMAL_PLATES_NUMBER+1):
     experience.population = []
     # bestpop.append([experience.bestPopulation])
     experience.bestPopulation = []
-    experience.initiate_population()
+    experience.initiate_population()#parallélisable 
     genX = 0
     converged = False
     bestScore = 0

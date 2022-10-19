@@ -1,3 +1,7 @@
 
 *.pyc
 logs_score.txt
+*.ipch
+.vs/
+CPP/AlgoGenetique/Debug
+*.vcxproj*
