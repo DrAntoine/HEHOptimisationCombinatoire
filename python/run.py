@@ -5,6 +5,7 @@ import random
 from joblib import Parallel, delayed
 import multiprocessing
 from chrono import Timer
+
 #bonjour
 def main_code(nbPlate):
     experience.settings(geneMutationFactor=0.8, populationSize=150, genLen=nbPlate+1, geneMinimalValue=1, geneMaximalValue=15000)
@@ -24,7 +25,7 @@ def main_code(nbPlate):
             bestScore = experience.bestScore
         else:
             newBest = min(bestScore, experience.bestScore)
-            if newBest == bestScore :²
+            if newBest == bestScore :
                 countBestScore += 1
             else:
                 countBestScore = 0
