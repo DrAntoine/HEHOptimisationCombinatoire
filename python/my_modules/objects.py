@@ -47,7 +47,6 @@ class Experience():
         self.GENE_MINIMAL_VALUE = geneMinimalValue
         self.GENOTYPE_LENGHT = genLen * (self.NOMBRE_SLOTS +1)
 
-
     def __coherence__(self, plateComposition):
         coherent = False
         while not coherent:

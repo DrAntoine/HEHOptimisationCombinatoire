@@ -40,7 +40,7 @@ def showResult(experience, Solutions):
     print("=~= "*30)
     FinalBest = math.inf
     solution = []
-    for s in Solutions:
+    for s in Solutions[0]:
         if s[0]< FinalBest:
             solution = s
             FinalBest = s[0]
