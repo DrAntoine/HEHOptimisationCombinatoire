@@ -49,7 +49,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 nombreGeneration=1500
-filePath = "../Dataset-Dev/I009.in"
+
+print("What's name of ur file (without extension) ? ")
+x=input()
+
+filePath = "../Dataset-Dev/" + x + ".in"
 
 experience = tools.load(filename=filePath)
 tools.cleanLogs()
