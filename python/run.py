@@ -86,4 +86,5 @@ print("Time spent: {0} seconds".format(timed.elapsed))
 print()
 
 tools.showResult(experience, Solution)
+tools.writeResult(experience, Solution)
 
