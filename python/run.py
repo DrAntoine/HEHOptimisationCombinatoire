@@ -1,26 +1,24 @@
-import logging
+from ast import parse
+from turtle import st
 from my_modules import tools
 import math
 import random
 from joblib import Parallel, delayed
 import multiprocessing
 from chrono import Timer
+import argparse
 
-#bonjour
-def main_code(nbPlate):
-    experience.settings(geneMutationFactor=0.8, populationSize=150, genLen=nbPlate+1, geneMinimalValue=1, geneMaximalValue=15000)
+def main_code(nbPlate, experience):
+    experience.settings(geneMutationFactor=0.3, populationSize=1000, genLen=nbPlate+1, geneMinimalValue=1, geneMaximalValue=99999)
     experience.population = []
-    # bestpop.append([experience.bestPopulation])
     experience.bestPopulation = []
     experience.initiate_population()#parallélisable 
     genX = 0
     converged = False
     bestScore = 0
     countBestScore = 0
-    # input(f"Len ={experience.GENOTYPE_LENGHT}")
-    while genX <= nombreGeneration and not converged:
+    while genX <= experience.NOMBRE_GENERATIONS_MAX and not converged:
         scoredPopulation = experience.selection()
-        # input(experience.bestScore)
         if genX==0:
             bestScore = experience.bestScore
         else:
@@ -30,61 +28,69 @@ def main_code(nbPlate):
             else:
                 countBestScore = 0
                 bestScore = newBest
-        logging.debug(f"{genX} - score : Ultimate Best Mean Worst - {experience.ultimateScore} {experience.bestScore} {experience.medianScore} {experience.worstScore} {len(experience.population)}")
-        #print(scoredPopulation[0])
-        tools.writeLogs(best=experience.bestScore, mean=experience.medianScore, worst=experience.worstScore, ultimate=experience.ultimateScore)
-        #print(f"\rNb plaque: {nbPlate} \tGeneration {genX} \tAvancement {(round((countBestScore/16)*100,0)):=6}%", end="")
-        if countBestScore > 15 or experience.medianScore == experience.bestScore:
-            #Solution.append(scoredPopulation[0])
+        if experience.LOGS: tools.writeLogs(best=experience.bestScore, mean=experience.medianScore, worst=experience.worstScore, ultimate=experience.ultimateScore)
+        if countBestScore > 150 or experience.medianScore == experience.bestScore:
             return scoredPopulation[0]
-            converged = True
-            print()
         if not converged:
             experience.reproduction(scoredPopulation)
             genX += 1
 
-print (__name__)
-#exit()
+def main():
+    
+    desc = "Algorithme génétique pour la résolution du problème de mariage de couverture."
+    parser = argparse.ArgumentParser(
+        prog="algen",
+        description=desc,
+        usage="algen [option] ...",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+    parser.add_argument(
+        "-l",
+        "--logs",
+        action="store_true",
+        default=False,
+        help="print logs"
+    )
 
-nombreGeneration=1500
+    parser.add_argument(
+        "-i",
+        "--input",
+        type = str,
+        metavar="",
+        required=True,
+        help = "Input file in .in format"
+    )
 
-print("What's name of ur file (without extension) ? ")
-x=input()
+    args = parser.parse_args()
+    # print("What's name of ur file (without extension) ? ")
+    # x=input()
 
-filePath = "../Dataset-Dev/" + x + ".in"
+    # filePath = "../Dataset-Dev/" + x + ".in"
+    filePath = args.input
 
-experience = tools.load(filename=filePath)
-tools.cleanLogs()
-logger.debug(f"""Paramètres d'experience:
-nb impression par couv : {experience.COVER_IMPRESSION_NUMBER}
-nb couv : {experience.NOMBRE_COUVERTURES}
-nb slot : {experience.NOMBRE_SLOTS}
-cout plaque : {experience.PLATE_COST} 
-cout feuille : {experience.SHEET_COST}""")
+    experience = tools.load(filename=filePath)
+    if args.logs :
+        tools.cleanLogs()
+    experience.setLogs(args.logs)
 
-MAXIMAL_PLATES_NUMBER = experience.NOMBRE_COUVERTURES
-MINIMAL_PLATES_NUMBER = math.ceil(experience.NOMBRE_COUVERTURES/experience.NOMBRE_SLOTS)
+    MAXIMAL_PLATES_NUMBER = experience.NOMBRE_COUVERTURES
+    MINIMAL_PLATES_NUMBER = math.ceil(experience.NOMBRE_COUVERTURES/experience.NOMBRE_SLOTS)
 
-Solution = []
-bestpop = []
+    Solution = []
+    bestpop = []
 
-#for nbPlate in range(MINIMAL_PLATES_NUMBER,MAXIMAL_PLATES_NUMBER+1):
-#     main_code(nbPlate)
+    num_cores = multiprocessing.cpu_count()
 
-num_cores = multiprocessing.cpu_count()
-#print(num_cores)
+    with Timer() as timed:
 
-with Timer() as timed:
+        Solution.append(Parallel(n_jobs=num_cores)(delayed(main_code)(nbPlate, experience) for nbPlate in range(MINIMAL_PLATES_NUMBER,MAXIMAL_PLATES_NUMBER+1)))
 
-    Solution.append(Parallel(n_jobs=num_cores)(delayed(main_code)(nbPlate) for nbPlate in range(MINIMAL_PLATES_NUMBER,MAXIMAL_PLATES_NUMBER+1)))
+    print()
+    print("Time spent: {0} seconds".format(timed.elapsed))
+    print()
 
-print()
-print("Time spent: {0} seconds".format(timed.elapsed))
-print()
+    tools.showResult(experience, Solution)
 
-tools.showResult(experience, Solution)
-tools.writeResult(experience, Solution)
-
+if __name__ == "__main__":
+    main()

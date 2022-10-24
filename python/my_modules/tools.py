@@ -4,7 +4,6 @@ import my_modules.objects as obj
 
 def load(filename):
     try:
-        # print(os.path.isfile(filename))
         if not os.path.isfile(filename):
             raise ValueError("Nom de fichier incorrect")
         else:
@@ -33,7 +32,6 @@ def writeLogs(best, mean, worst, ultimate):
 
 def cleanLogs():
     with open("logs_score.txt", "w") as f:
-        # f.write("0\t0\t0\n")
         f.write("")
 
 def showResult(experience, Solutions):
@@ -62,30 +60,3 @@ def showResult(experience, Solutions):
             nbCovPrinted[cov-1] += printArrondi[i]
     for cov in range(len(experience.COVER_IMPRESSION_NUMBER)):
         print(f"Nombre d'impression couverture {cov+1} \t: {experience.COVER_IMPRESSION_NUMBER[cov]}\t Imprimé : {nbCovPrinted[cov]}")
-
-def writeResult(experience, Solutions):
-    FinalBest = math.inf
-    solution = []
-    for s in Solutions[0]:
-        if s[0]< FinalBest:
-            solution = s
-            FinalBest = s[0]
-    gene = experience.decodeIndividu(solution[1])
-    printArrondi = [math.floor(g) for g in gene[0]]
-    pluriels = ""
-    if len(printArrondi)>1:
-        pluriels = "s"
-    
-    f = open("output.txt", "w")
-
-    f.write(str(len(printArrondi)))  
-    f.write("\n")
-    for i in range(len(printArrondi)):
-        f.write(str(printArrondi[i]))
-        f.write("\n")
-    for i in range(len(printArrondi)):
-        f.write(str(gene[1][i*experience.NOMBRE_SLOTS:(i+1)*experience.NOMBRE_SLOTS]))
-        f.write("\n")
-    f.write(str(round(solution[0],2)))
-
-    f.close()

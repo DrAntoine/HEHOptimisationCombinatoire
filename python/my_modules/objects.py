@@ -1,9 +1,5 @@
-import logging
 import random
 import math
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 class Experience():
     NOMBRE_COUVERTURES = 1
@@ -17,9 +13,10 @@ class Experience():
     MAGNITUDE_OF_GENE_MUTATION = 12
     GENE_MAXIMAL_VALUE = 1000
     GENE_MINIMAL_VALUE = 1
-    MAXIMAL_GENOTYPE_LENGHT = 50
-    MINIMAL_GENOTYPE_LENGHT = 1
     GENOTYPE_LENGHT = 0
+    NOMBRE_GENERATIONS_MAX = 1500000
+    LOGS = False
+
     bestScore = 0
     medianScore = 0
     worstScore = 0
@@ -27,7 +24,10 @@ class Experience():
     population = []
     scores = []
     bestPopulation = []
+    
 
+    def setLogs(self, booleenValue = False):
+        LOGS = booleenValue
 
     def __init__(self, nbCouv, nbSlot, sheetCost, plateCost, printPerCov):
         self.NOMBRE_COUVERTURES = nbCouv
@@ -35,8 +35,6 @@ class Experience():
         self.SHEET_COST = sheetCost
         self.PLATE_COST = plateCost
         self.COVER_IMPRESSION_NUMBER = printPerCov
-        self.MAXIMAL_GENOTYPE_LENGHT = (self.NOMBRE_SLOTS+1)*self.NOMBRE_COUVERTURES
-        self.MINIMAL_GENOTYPE_LENGHT = math.ceil(self.NOMBRE_COUVERTURES/self.NOMBRE_SLOTS)*(self.NOMBRE_SLOTS+1)
         self.settings()
 
     def settings(self, populationSize = 100, magnitudeOfGeneMutation=10, geneMutationFactor=0.1, geneMaximalValue = 100, geneMinimalValue=1, genLen = 5):
@@ -81,7 +79,6 @@ class Experience():
                                 plateComposition[i] = min(plateComposition[i] + step, self.GENE_MAXIMAL_VALUE)
                             break
                         else: j+=1
-            # return plateCompositionDecoded
 
     def __estimateCost__(self, individu, printCost=False):
         printPerPlate, plateComposition = self.decodeIndividu(individu)
@@ -158,7 +155,7 @@ class Experience():
         self.bestPopulation += ScoredPopulation
         self.bestPopulation.sort()
         self.bestPopulation = self.bestPopulation[:self.POPULATION_SIZE]
-        self.logs(ScoredPopulation)
+        if self.LOGS : self.logs(ScoredPopulation)
         return ScoredPopulation
 
     def logs(self, ScoredPopulation):
