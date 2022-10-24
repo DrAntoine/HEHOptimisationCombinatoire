@@ -5,3 +5,4 @@ logs_score.txt
 .vs/
 CPP/AlgoGenetique/Debug
 *.vcxproj*
+*.out

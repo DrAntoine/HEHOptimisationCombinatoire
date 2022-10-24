@@ -102,7 +102,7 @@ def update_graph_scatter(n):
     )
 
     worstData = False
-    medianData = True
+    medianData = False
     currentBest = True
     configurationBest = True
     sessionBest = True

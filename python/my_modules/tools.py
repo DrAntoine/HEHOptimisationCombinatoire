@@ -36,14 +36,7 @@ def cleanLogs():
 
 def showResult(experience, Solutions):
     print("=~= "*30)
-    FinalBest = math.inf
-    solution = []
-    for s in Solutions[0]:
-        if s[0]< FinalBest:
-            solution = s
-            FinalBest = s[0]
-    gene = experience.decodeIndividu(solution[1])
-    printArrondi = [math.floor(g) for g in gene[0]]
+    gene, printArrondi, solution = getBestResult(experience, Solutions)
     pluriels = ""
     if len(printArrondi)>1:
         pluriels = "s"
@@ -60,3 +53,34 @@ def showResult(experience, Solutions):
             nbCovPrinted[cov-1] += printArrondi[i]
     for cov in range(len(experience.COVER_IMPRESSION_NUMBER)):
         print(f"Nombre d'impression couverture {cov+1} \t: {experience.COVER_IMPRESSION_NUMBER[cov]}\t Imprimé : {nbCovPrinted[cov]}")
+
+def writeResult(experience, Solutions, fileName):
+    gene, printArrondi, solution = getBestResult(experience, Solutions)
+    with open(fileName, "w") as f:
+        f.write(str(len(printArrondi)))  
+        f.write("\n")
+        for i in range(len(printArrondi)):
+            f.write(str(printArrondi[i]))
+            f.write("\n")
+        for i in range(len(printArrondi)):
+            phrase = ""
+            for p in gene[1][i*experience.NOMBRE_SLOTS:(i+1)*experience.NOMBRE_SLOTS]:
+                phrase += f"{p},"
+            f.write(f"{phrase[:-1]}\n")
+        f.write(str(round(solution[0],2)))
+    
+
+def getBestResult(experience, Solutions):
+    FinalBest = math.inf
+    solution = []
+    if len(Solutions)==1 and type(Solutions[0] == type([])):
+        Solutions = Solutions[0]
+    else:
+        Solutions = Solutions
+    for s in Solutions:
+        if int(s[0])< FinalBest:
+            solution = s
+            FinalBest = s[0]
+    gene = experience.decodeIndividu(solution[1])
+    printArrondi = [math.floor(g) for g in gene[0]]
+    return gene, printArrondi, solution

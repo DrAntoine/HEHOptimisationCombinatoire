@@ -27,7 +27,7 @@ class Experience():
     
 
     def setLogs(self, booleenValue = False):
-        LOGS = booleenValue
+        self.LOGS = booleenValue
 
     def __init__(self, nbCouv, nbSlot, sheetCost, plateCost, printPerCov):
         self.NOMBRE_COUVERTURES = nbCouv
@@ -150,19 +150,32 @@ class Experience():
         return printPerPlate, plateCompositionDecodedAndFixed
 
     def selection(self):
+        # //
         ScoredPopulation = [(self.__estimateCost__(individu), individu) for individu in self.population]
-        ScoredPopulation.sort()
+        # not //
+        #ScoredPopulation.sort()
         self.bestPopulation += ScoredPopulation
         self.bestPopulation.sort()
         self.bestPopulation = self.bestPopulation[:self.POPULATION_SIZE]
-        if self.LOGS : self.logs(ScoredPopulation)
+        best = 0
+        worst = 0
+        for i in range(len(ScoredPopulation)):
+            if i ==0:
+                best=ScoredPopulation[i]
+                worst=ScoredPopulation[i]
+            else:
+                if best[0] > ScoredPopulation[i][0]:
+                    best = ScoredPopulation[i]
+                if worst[0] < ScoredPopulation[i][0]:
+                    worst = ScoredPopulation[i]
+        self.bestScore= round(best[0],2)
+        self.worstScore= round(worst[0],2)
+        if self.LOGS : self.logs(self.bestPopulation)
         return ScoredPopulation
 
     def logs(self, ScoredPopulation):
-        self.bestScore= round(ScoredPopulation[0][0],2)
-        self.worstScore= round(ScoredPopulation[-1][0],2)
-        med = ScoredPopulation[len(ScoredPopulation)//2][0]
-        self.medianScore = round(med)
+        # med = ScoredPopulation[len(ScoredPopulation)//2][0]
+        self.medianScore = (self.bestScore+self.worstScore)//2
         self.ultimateScore = self.bestPopulation[0][0]
 
 
