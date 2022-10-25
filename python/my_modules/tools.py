@@ -26,9 +26,9 @@ def load(filename):
         print(e)
         exit()
 
-def writeLogs(best, mean, worst, ultimate):
+def writeLogs(best, mean, worst, ultimate, nbPlate, genX):
     with open(f"logs_score.txt", "a") as file:
-        file.writelines(f"{int(ultimate)}\t{int(best)}\t{int(mean)}\t{int(worst)}\n")
+        file.writelines(f"{int(ultimate)} {int(best)} {int(mean)} {int(worst)} {nbPlate} {genX} \n")
 
 def cleanLogs():
     with open("logs_score.txt", "w") as f:

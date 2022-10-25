@@ -1,5 +1,7 @@
 import random
 import math
+# import numba
+# from numba import jit
 
 class Experience():
     NOMBRE_COUVERTURES = 1
@@ -79,13 +81,13 @@ class Experience():
                                 plateComposition[i] = min(plateComposition[i] + step, self.GENE_MAXIMAL_VALUE)
                             break
                         else: j+=1
-
-    def __estimateCost__(self, individu, printCost=False):
+    
+    def __estimateCost__(self, individu):
         printPerPlate, plateComposition = self.decodeIndividu(individu)
         cost = len(printPerPlate)*self.PLATE_COST
         for i in printPerPlate:
             cost += i*self.SHEET_COST
-        return cost
+        return int(cost)
 
 
     def decodePlate(self, plateComposition):
@@ -150,10 +152,7 @@ class Experience():
         return printPerPlate, plateCompositionDecodedAndFixed
 
     def selection(self):
-        # //
         ScoredPopulation = [(self.__estimateCost__(individu), individu) for individu in self.population]
-        # not //
-        #ScoredPopulation.sort()
         self.bestPopulation += ScoredPopulation
         self.bestPopulation.sort()
         self.bestPopulation = self.bestPopulation[:self.POPULATION_SIZE]
@@ -170,41 +169,44 @@ class Experience():
                     worst = ScoredPopulation[i]
         self.bestScore= round(best[0],2)
         self.worstScore= round(worst[0],2)
-        if self.LOGS : self.logs(self.bestPopulation)
+        if self.LOGS : self.logs()
         return ScoredPopulation
 
-    def logs(self, ScoredPopulation):
-        # med = ScoredPopulation[len(ScoredPopulation)//2][0]
+    def logs(self):
         self.medianScore = (self.bestScore+self.worstScore)//2
         self.ultimateScore = self.bestPopulation[0][0]
 
 
     def reproduction(self, scoredPopulation):
-        new_generation = [] #self.bestPopulation[:self.POPULATION_SIZE//10]
+        new_generation = []
         scoredPopulation = self.bestPopulation
-        lotery = []
-        delta = self.worstScore - self.bestScore
-        for id_p in range(len(scoredPopulation)):
-            reproductionRate = 5
-            if delta != 0: reproductionRate = math.ceil((1-((scoredPopulation[id_p][0] - self.bestScore)/delta))*10)
-            lotery.extend(id_p for _ in range(reproductionRate))
-        random.shuffle(lotery)
+        lotery = [i for i in range(len(scoredPopulation))]
+        #random.shuffle(lotery)
         sample1 = 0
         sample2 = 0
-        for _ in range(self.POPULATION_SIZE//10):
+        mixage = self.coupleGenerator(lotery)
+        for _ in range(self.POPULATION_SIZE//5):
             new_generation.append(self.__create_individu__())
         while len(new_generation)<self.POPULATION_SIZE:
-            sample1 = random.choice(lotery)
-            sample2 = random.choice(lotery)
+            sample1, sample2 = next(mixage)
             while sample2 == sample1:
-                sample2 = random.choice(lotery)
+                sample1, sample2 = next(mixage)
             child = self.__accouplement__(scoredPopulation[sample1][1], scoredPopulation[sample2][1])
             child_score = self.__estimateCost__(child)
-            if child_score>0 and child_score < self.bestScore*1.5:
+            if child_score>0 :# and child_score < self.bestScore*1.5:
                 new_generation.append(child)
-                lotery.remove(sample1)
-                lotery.remove(sample2)
+                # lotery.remove(sample1)
+                # lotery.remove(sample2)
         self.population=new_generation
+    
+    def coupleGenerator(self, lotery):
+        papa=list(lotery)
+        mama = list(lotery)
+        random.shuffle(papa)
+        random.shuffle(mama)
+        for i in papa:
+            for j in mama:
+                yield (i, j)
 
     def __accouplement__(self, individu_1, individu_2):
         min_lenght = min(len(individu_1), len(individu_2))
@@ -231,14 +233,14 @@ class Experience():
     def __mutate__(self, chromosome):
         chromosome_muted = chromosome
         for i in range(len(chromosome_muted)):
-            if random.random() < self.GENE_MUTATION_FACTOR:
-                mutation = chromosome_muted[i]+random.randint(-self.MAGNITUDE_OF_GENE_MUTATION,self.MAGNITUDE_OF_GENE_MUTATION)
-                if mutation > self.GENE_MAXIMAL_VALUE:
-                    chromosome_muted[i] = self.GENE_MAXIMAL_VALUE
-                elif mutation < self.GENE_MINIMAL_VALUE:
-                    chromosome_muted[i] = self.GENE_MINIMAL_VALUE
-                else:
-                    chromosome_muted[i]=mutation
+            # if random.random() < self.GENE_MUTATION_FACTOR:
+            mutation = chromosome_muted[i]+random.randint(-self.MAGNITUDE_OF_GENE_MUTATION,self.MAGNITUDE_OF_GENE_MUTATION)
+            if mutation > self.GENE_MAXIMAL_VALUE:
+                chromosome_muted[i] = self.GENE_MAXIMAL_VALUE
+            elif mutation < self.GENE_MINIMAL_VALUE:
+                chromosome_muted[i] = self.GENE_MINIMAL_VALUE
+            else:
+                chromosome_muted[i]=mutation
         return chromosome_muted
 
 

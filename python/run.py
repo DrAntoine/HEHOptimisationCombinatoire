@@ -5,38 +5,37 @@ import multiprocessing
 from chrono import Timer
 import argparse
 import os
+import random
 
 def main_code(nbPlate, experience):
-    experience.settings(geneMutationFactor=0.8, populationSize=100, magnitudeOfGeneMutation = 500, genLen=nbPlate+1, geneMinimalValue=1, geneMaximalValue=15000)
+    experience.settings(populationSize=100, magnitudeOfGeneMutation = 500, genLen=nbPlate+1, geneMinimalValue=1, geneMaximalValue=15000)
     experience.population = []
     experience.bestPopulation = []
     experience.initiate_population()#parallélisable 
     genX = 0
     converged = False
     bestScore = 0
-    lastBest = 0
     generationLastBest = 0
+    countBest = 0
     while genX <= experience.NOMBRE_GENERATIONS_MAX and not converged:
         scoredPopulation = experience.selection()
         if genX==0:
             bestScore = experience.bestScore
-            lastBest = bestScore
         else:
             newBest = min(bestScore, experience.bestPopulation[0][0])
             if newBest != bestScore :
-                lastBest=bestScore
                 bestScore=newBest
-                generationLastBest = genX
+                countBest=0
             else:
-                bestScore = newBest
+                countBest+=1
         if experience.LOGS: 
-            tools.writeLogs(best=experience.bestScore, mean=experience.medianScore, worst=experience.worstScore, ultimate=experience.ultimateScore) 
+            tools.writeLogs(best=experience.bestScore, mean=experience.medianScore, worst=experience.worstScore, ultimate=experience.ultimateScore, genX=genX, nbPlate=nbPlate) 
             print(f"{nbPlate}# {genX} {experience.bestPopulation[0][0]}, {experience.medianScore}, {experience.worstScore}")
         if genX != generationLastBest:
-            nbGenerationPasse = genX-generationLastBest
-            delta = (lastBest-bestScore)/nbGenerationPasse
-            if delta < 10 or nbGenerationPasse > 20:
-                return experience.bestPopulation[0]
+            if genX >5000 or countBest > 50:
+                if experience.LOGS:
+                    print(f"###{nbPlate} STOP ###")
+                return((experience.bestPopulation[0],genX))
         experience.reproduction(scoredPopulation)
         genX += 1
 
@@ -85,21 +84,30 @@ def main():
     MAXIMAL_PLATES_NUMBER = experience.NOMBRE_COUVERTURES
     MINIMAL_PLATES_NUMBER = math.ceil(experience.NOMBRE_COUVERTURES/experience.NOMBRE_SLOTS)
     Solution = []
+    nb_gen = 0
+    sol = []
     if args.sequential == True:
         with Timer() as timed:
             if experience.LOGS: print("Algorithme en sequentiel")
             for nbPlate in range(MINIMAL_PLATES_NUMBER,MAXIMAL_PLATES_NUMBER+1):
-                Solution.append(main_code(experience=experience, nbPlate=nbPlate))
+                sol.append(main_code(experience=experience, nbPlate=nbPlate))
     else:
         if experience.LOGS: print("Algorithme en parallele")
         num_cores = multiprocessing.cpu_count()
         with Timer() as timed:
-            Solution.append(Parallel(n_jobs=num_cores)(delayed(main_code)(nbPlate, experience) for nbPlate in range(MINIMAL_PLATES_NUMBER,MAXIMAL_PLATES_NUMBER+1)))
+            sol.append(Parallel(n_jobs=num_cores-1)(delayed(main_code)(nbPlate, experience) for nbPlate in range(MINIMAL_PLATES_NUMBER,MAXIMAL_PLATES_NUMBER+1)))
+    if type(sol) == type([]) and len(sol) == 1:
+        sol=sol[0]
+
+    for s in sol:
+        Solution.append(s[0])
+        nb_gen += s[1]
 
     print()
-    print("Time spent: {0} seconds".format(timed.elapsed))
+    timeElapsed = timed.elapsed
+    print(f"Time spent: {timeElapsed} seconds")
+    print(f"Solutions per second : {round((nb_gen*experience.POPULATION_SIZE)/timeElapsed, 2)}")
     print()
-
     tools.showResult(experience, Solution)
     filename = args.input
     filename = os.path.basename(filename)
@@ -108,4 +116,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # random.seed = 42
+    random.seed = 42
