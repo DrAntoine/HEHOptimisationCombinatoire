@@ -6,18 +6,23 @@ from chrono import Timer
 import argparse
 import os
 import random
+import time
 
 def main_code(nbPlate, experience):
+    stop = False
+    t= time.process_time()
     experience.settings(populationSize=100, magnitudeOfGeneMutation = 500, genLen=nbPlate+1, geneMinimalValue=1, geneMaximalValue=15000)
     experience.population = []
     experience.bestPopulation = []
     experience.initiate_population()#parallélisable 
     genX = 0
-    converged = False
     bestScore = 0
     generationLastBest = 0
     countBest = 0
-    while genX <= experience.NOMBRE_GENERATIONS_MAX and not converged:
+    while genX <= experience.NOMBRE_GENERATIONS_MAX :
+        elapsed_time = time.process_time() - t
+        if elapsed_time > 55.0/(experience.NOMBRE_COUVERTURES+1):
+            stop = True
         scoredPopulation = experience.selection()
         if genX==0:
             bestScore = experience.bestScore
@@ -28,14 +33,15 @@ def main_code(nbPlate, experience):
                 countBest=0
             else:
                 countBest+=1
+        
         if experience.LOGS: 
             tools.writeLogs(best=experience.bestScore, mean=experience.medianScore, worst=experience.worstScore, ultimate=experience.ultimateScore, genX=genX, nbPlate=nbPlate) 
             print(f"{nbPlate}# {genX} {experience.bestPopulation[0][0]}, {experience.medianScore}, {experience.worstScore}")
-        if genX != generationLastBest:
-            if genX >5000 or countBest > 50:
-                if experience.LOGS:
-                    print(f"###{nbPlate} STOP ###")
-                return((experience.bestPopulation[0],genX))
+    
+        if stop or genX >5000 or countBest > 50:
+            if experience.LOGS:
+                print(f"###{nbPlate} STOP ###")
+            return((experience.bestPopulation[0],genX))
         experience.reproduction(scoredPopulation)
         genX += 1
 
